@@ -5,7 +5,11 @@ import { Textarea } from "./textarea";
 import { Button } from "./button";
 import { Loader } from "lucide-react";
 import { api } from "@/convex/_generated/api";
-import { useAction, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { v4 as uuidv4 } from "uuid";
+import { generateUploadUrl } from "@/convex/files";
+import { useUploadFiles } from "@xixixao/uploadstuff/react";
+import { useToast } from "./use-toast";
 
 const useGeneratePodcast = ({
   setAudio,
@@ -13,25 +17,50 @@ const useGeneratePodcast = ({
   voiceType,
   setAudioStorageId,
 }: GeneratePodcastProps) => {
+  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const getPodcastAudio = useAction(api.openai.getPodcastAudioAction);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const getAudioUrl = useMutation(api.podcasts.getUrl);
+  const { startUpload } = useUploadFiles(generateUploadUrl);
 
   const generatePodcast = async () => {
     setIsGenerating(true);
     setAudio("");
-    const response = await getPodcastAudio({
-      input: voicePrompt,
-      voice: voiceType,
-    });
-    const blob = new Blob([response], { type: "audio/mpeg" });
-    console.log(blob);
+
     if (!voicePrompt) {
+      toast({
+        title: "Please provide a voice prompt",
+      });
       return setIsGenerating(false);
     }
 
     try {
+      const response = await getPodcastAudio({
+        input: voicePrompt,
+        voice: voiceType,
+      });
+      const blob = new Blob([response], { type: "audio/mpeg" });
+      const fileName = `podcast-${uuidv4()}.mp3`;
+      const file = new File([blob], fileName, { type: "audio/mpeg" });
+
+      const uploaded = await startUpload([file]);
+      const storageId = (uploaded[0].response as any).storageId;
+      setAudioStorageId(storageId);
+
+      const audioUrl = await getAudioUrl({ storageId });
+      setAudio(audioUrl!);
+      setIsGenerating(false);
+      toast({
+        title: "Podcast generated successfully",
+      });
     } catch (error) {
+      setIsGenerating(false);
       console.error("error generating podcast");
+      toast({
+        title: "Error generating podcast",
+        variant: "destructive",
+      });
     }
   };
 

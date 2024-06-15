@@ -2,6 +2,7 @@ import LeftSidebar from "@/components/ui/LeftSidebar";
 import MobileNav from "@/components/ui/MobileNav";
 import RightSidebar from "@/components/ui/RightSidebar";
 import Image from "next/image";
+import { Toaster } from "@/components/ui/toaster";
 
 export default function RootLayout({
   children,
@@ -16,7 +17,7 @@ export default function RootLayout({
           <div className="mx-auto flex w-full max-w-5xl flex-col max-sm:px-4">
             <div className="flex h-16 items-center justify-between md:hidden">
               <Image
-                src="/icons/logo.svg"
+                src="/icons/apple-podcast.svg"
                 alt="menu-icon"
                 width={30}
                 height={30}
@@ -24,7 +25,7 @@ export default function RootLayout({
               <MobileNav />
             </div>
             <div className="flex flex-col md:pb-14">
-              Toaster
+              <Toaster />
               {children}
             </div>
           </div>
